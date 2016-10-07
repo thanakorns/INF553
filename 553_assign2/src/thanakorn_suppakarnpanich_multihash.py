@@ -73,6 +73,7 @@ def uniq(lst):
         yield item
         last = item
 
+
 def sort_and_deduplicate(l):
     return list(uniq(sorted(l, reverse=True)))
 
