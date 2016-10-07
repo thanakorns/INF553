@@ -12,31 +12,125 @@ def runMultihash():
     bucket = int(sys.argv[3])
     inFile = open(fileName, 'r')
     frequentItemset = []
-    itemIdDictionary = {}
+    idToItemDictionary = {}
     itemCountDictionary = {}
+    candidateItemArray = {}
     itemId = 0;
     k = 1
     kMax = getMaxTuplesNumber(fileName)
-    while k <= kMax:
+    for k in range(1, kMax):
         tuples = createItemTuples(k)
+        if k == 1:
+            candidateItemArray = sort_and_deduplicate(tuples)
 
         itemCountDictionary = makeItemCountDictionary(tuples) #get item counts
-        frequentItemDictionary = makeFrequentItemDictionary(itemCountDictionary, support)
+        itemToIdDictionary = makeItemToIdDictionary(tuples)
+        idToItemDictionary = makeIdToItemDictionary(itemToIdDictionary)
 
-        hashTable1 = createHashTable(k+1, fileName, bucket, 1) #hash item tuples to hashtable 1
-        hashTable2 = createHashTable(k+1, fileName, bucket, 7) #hash item tuples to hashtable 2
+        nextTuples = createItemTuples(k+1)
+        hashTable1 = createHashTable(nextTuples, bucket, 1) #hash item tuples to hashtable 1
+        hashTable2 = createHashTable(nextTuples, bucket, 7) #hash item tuples to hashtable 2
 
-        bitmap1 = CreateBitMap(hashTable1, support, bucket)
-        bitmap2 = CreateBitMap(hashTable2, support, bucket)
+        # print sorted(candidateItemArray)
+        #2nd pass
+        frequentItemset = makeFrequentItemset(candidateItemArray, itemCountDictionary, idToItemDictionary, itemToIdDictionary, support, k)
+        bitmap1 = createBitMap(hashTable1, support, bucket)
+        bitmap2 = createBitMap(hashTable2, support, bucket)
+        itemToIdDictionaryForNextTuples = makeItemToIdDictionary(nextTuples)
+        candidateItemArray = makeCandidateItemArray(nextTuples, itemToIdDictionaryForNextTuples, frequentItemset, support, bitmap1, bitmap2, 1, 7, bucket, k)
+
+        if not frequentItemset:
+            break;
+        print (sorted(frequentItemset))
+        print ("\n")
+        print hashTable1
+        print hashTable2
 
 
-        #find frequent itemsets
-        k = k + 1
+def makeFrequentItemset(candidateItemArray, itemCountDictionary, idToItemDictionary, itemToIdDictionary, support, k):
+    frequentItemSet = []
+    frequentList = []
+    for tuple in candidateItemArray:
+        key = makeStringFromTuple(tuple)
+        if(itemCountDictionary[itemToIdDictionary[key]] >= support):
+            frequentItemSet.append(idToItemDictionary[itemToIdDictionary[key]])
+    if k == 1:
+        frequentList = list(itertools.chain.from_iterable(frequentItemSet))
+    else:
+        for eachTuple in frequentItemSet:
+            frequentList.append(list(itertools.chain.from_iterable(eachTuple)))
+    return frequentList
 
 
-def createHashTable(k, fileName, bucket, randomConstant):
+def uniq(lst):
+    last = object()
+    for item in lst:
+        if item == last:
+            continue
+        yield item
+        last = item
+
+def sort_and_deduplicate(l):
+    return list(uniq(sorted(l, reverse=True)))
+
+
+def makeCandidateItemArray(nextTuples, itemToIdDictionary, frequentItemset, support, bitmap1, bitmap2, randomConstant1, randomConstant2, bucket, k):
+    setTuples = sort_and_deduplicate(nextTuples)
+    candidateItemArray = []
+    for each in setTuples:
+        components = createItemsets(each, k)
+        if k == 1:
+            newListArray = []
+            for eachCombinationList in components:
+                for eachLetter in eachCombinationList:
+                    newListArray.append(eachLetter)
+            components = newListArray
+
+        candidate = 1
+        for eachComponent in components:
+            if not eachComponent in frequentItemset:
+                # print "component error: " + eachComponent + " " + str(frequentItemset)
+                candidate = 0
+                break
+        if itemToIdDictionary.__contains__(makeStringFromTuple(each)):
+            key = itemToIdDictionary[makeStringFromTuple(each)]
+            if not bitmap1[(randomConstant1 + key) % bucket] == 1:
+                # print "bitmap1 error: " +  str(bitmap1[(randomConstant1+key) % bucket]) + " " + str(support)
+                candidate = 0
+            if not bitmap2[(randomConstant2 + key) % bucket] == 1:
+                # print "bitmap2 error: " +  str(bitmap1[(randomConstant2+key) % bucket]) + " " + str(support)
+                candidate = 0
+        if candidate == 1:
+            candidateItemArray.append(list(each))
+    # if k == 2:
+    #     print sorted(candidateItemArray)
+    return candidateItemArray
+
+
+def makeItemToIdDictionary(tuples):
+    itemIdDictionary = {}
+    itemId = 0;
+    for each in tuples:
+        each = makeStringFromTuple(each)
+        if not itemIdDictionary.__contains__(each):
+            itemIdDictionary[each] = itemId
+            itemId = itemId + 1
+    return itemIdDictionary
+
+
+def makeIdToItemDictionary(itemToIdDictionary):
+    idToItemDictionary = {}
+    for key, value in itemToIdDictionary.items():
+        tempList = list()
+        for i in range(0, len(key)):
+            tempList.append(key[i])
+        itemTuple = tuple(tempList)
+        idToItemDictionary[value] = itemTuple
+    return idToItemDictionary
+
+
+def createHashTable(tuples, bucket, randomConstant):
     hashTable = {}
-    tuples = createItemTuples(k)
     itemCountDictionary = makeItemCountDictionary(tuples)
     for i in range(0, bucket):
         hashTable[i] = 0
@@ -81,7 +175,7 @@ def getMaxTuplesNumber(fileName):
     return kMax
 
 
-def CreateBitMap(hashTable, support, bucket):
+def createBitMap(hashTable, support, bucket):
     bitmap = [0] * bucket
     for key, value in hashTable.items():
         if(value >= support):
@@ -90,6 +184,10 @@ def CreateBitMap(hashTable, support, bucket):
             bitmap[key] = 0
     return bitmap
 
+
+def createItemsets(listTemp,k):
+    listArray=[list(x) for x in itertools.combinations(listTemp, k)]
+    return listArray
 
 def createItemTuples(k):
     inFile = open(sys.argv[1], 'r')
@@ -101,7 +199,7 @@ def createItemTuples(k):
         for each in itemArray:
             each = each.rstrip("\n")
             listArray.append(each)
-        itemset = [list(x) for x in itertools.combinations(listArray, k)]
+        itemset = createItemsets(listArray, k)
         for each in itemset:
             each.sort()
             result.append(each)
