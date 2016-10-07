@@ -23,7 +23,7 @@ def runMultihash():
         if k == 1:
             candidateItemArray = sort_and_deduplicate(tuples)
 
-        itemCountDictionary = makeItemCountDictionary(tuples) #get item counts
+        itemCountDictionary = makeItemCountDictionary(tuples)
         itemToIdDictionary = makeItemToIdDictionary(tuples)
         idToItemDictionary = makeIdToItemDictionary(itemToIdDictionary)
 
@@ -31,7 +31,6 @@ def runMultihash():
         hashTable1 = createHashTable(nextTuples, bucket, 1) #hash item tuples to hashtable 1
         hashTable2 = createHashTable(nextTuples, bucket, 7) #hash item tuples to hashtable 2
 
-        # print sorted(candidateItemArray)
         #2nd pass
         frequentItemset = makeFrequentItemset(candidateItemArray, itemCountDictionary, idToItemDictionary, itemToIdDictionary, support, k)
         bitmap1 = createBitMap(hashTable1, support, bucket)
@@ -93,21 +92,16 @@ def makeCandidateItemArray(nextTuples, itemToIdDictionary, frequentItemset, supp
         candidate = 1
         for eachComponent in components:
             if not eachComponent in frequentItemset:
-                # print "component error: " + eachComponent + " " + str(frequentItemset)
                 candidate = 0
                 break
         if itemToIdDictionary.__contains__(makeStringFromTuple(each)):
             key = itemToIdDictionary[makeStringFromTuple(each)]
             if not bitmap1[(randomConstant1 + key) % bucket] == 1:
-                # print "bitmap1 error: " +  str(bitmap1[(randomConstant1+key) % bucket]) + " " + str(support)
                 candidate = 0
             if not bitmap2[(randomConstant2 + key) % bucket] == 1:
-                # print "bitmap2 error: " +  str(bitmap1[(randomConstant2+key) % bucket]) + " " + str(support)
                 candidate = 0
         if candidate == 1:
             candidateItemArray.append(list(each))
-    # if k == 2:
-    #     print sorted(candidateItemArray)
     return candidateItemArray
 
 
