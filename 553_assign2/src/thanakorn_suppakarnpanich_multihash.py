@@ -15,6 +15,8 @@ def runMultihash():
     idToItemDictionary = {}
     itemCountDictionary = {}
     candidateItemArray = {}
+    printedHashTable1 = {}
+    printedHashtable2 = {}
     itemId = 0;
     k = 1
     kMax = getMaxTuplesNumber(fileName)
@@ -41,10 +43,13 @@ def runMultihash():
 
         if not frequentItemset:
             break;
+        if k != 1:
+            print ("\n")
+            print printedHashTable1
+            print printedHashtable2
         print (sorted(frequentItemset))
-        print ("\n")
-        print hashTable1
-        print hashTable2
+        printedHashTable1 = hashTable1
+        printedHashtable2 = hashTable2
 
 
 def makeFrequentItemset(candidateItemArray, itemCountDictionary, idToItemDictionary, itemToIdDictionary, support, k):
