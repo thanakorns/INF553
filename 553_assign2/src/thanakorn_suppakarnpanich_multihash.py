@@ -1,5 +1,3 @@
-#class
-
 _author_ = 'thanakorn suppakarnpanich'
 
 import sys
@@ -190,9 +188,10 @@ def createBitMap(hashTable, support, bucket):
     return bitmap
 
 
-def createItemsets(listTemp,k):
+def createItemsets(listTemp, k):
     listArray=[list(x) for x in itertools.combinations(listTemp, k)]
     return listArray
+
 
 def createItemTuples(k):
     inFile = open(sys.argv[1], 'r')
