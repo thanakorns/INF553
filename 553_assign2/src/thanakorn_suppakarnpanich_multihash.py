@@ -11,7 +11,7 @@ def runMultihash():
     inFile = open(fileName, 'r')
     frequentItemset = []
     idToItemDictionary = {}
-    itemCountDictionary = {}
+    TuplesHelper = {}
     candidateItemArray = {}
     printedHashTable1 = {}
     printedHashtable2 = {}
@@ -23,7 +23,7 @@ def runMultihash():
         if k == 1:
             candidateItemArray = sort_and_deduplicate(tuples)
 
-        itemCountDictionary = makeItemCountDictionary(tuples)
+        TuplesHelper = makeTuplesHelper(tuples)
         itemToIdDictionary = makeItemToIdDictionary(tuples)
         idToItemDictionary = makeIdToItemDictionary(itemToIdDictionary)
 
@@ -32,7 +32,7 @@ def runMultihash():
         hashTable2 = createHashTable(nextTuples, bucket, 7) #hash item tuples to hashtable 2
 
         #2nd pass
-        frequentItemset = makeFrequentItemset(candidateItemArray, itemCountDictionary, idToItemDictionary, itemToIdDictionary, support, k)
+        frequentItemset = makeFrequentItemset(candidateItemArray, TuplesHelper, idToItemDictionary, itemToIdDictionary, support, k)
         bitmap1 = createBitMap(hashTable1, support, bucket)
         bitmap2 = createBitMap(hashTable2, support, bucket)
         itemToIdDictionaryForNextTuples = makeItemToIdDictionary(nextTuples)
@@ -49,12 +49,12 @@ def runMultihash():
         printedHashtable2 = hashTable2
 
 
-def makeFrequentItemset(candidateItemArray, itemCountDictionary, idToItemDictionary, itemToIdDictionary, support, k):
+def makeFrequentItemset(candidateItemArray, TuplesHelper, idToItemDictionary, itemToIdDictionary, support, k):
     frequentItemSet = []
     frequentList = []
     for tuple in candidateItemArray:
         key = makeStringFromTuple(tuple)
-        if(itemCountDictionary[itemToIdDictionary[key]] >= support):
+        if(TuplesHelper[itemToIdDictionary[key]] >= support):
             frequentItemSet.append(idToItemDictionary[itemToIdDictionary[key]])
     if k == 1:
         frequentList = list(itertools.chain.from_iterable(frequentItemSet))
@@ -129,10 +129,10 @@ def makeIdToItemDictionary(itemToIdDictionary):
 
 def createHashTable(tuples, bucket, randomConstant):
     hashTable = {}
-    itemCountDictionary = makeItemCountDictionary(tuples)
+    TuplesHelper = makeTuplesHelper(tuples)
     for i in range(0, bucket):
         hashTable[i] = 0
-    for key, value in itemCountDictionary.items():
+    for key, value in TuplesHelper.items():
         hashKey = (randomConstant+key)%bucket
         count = hashTable[hashKey]
         count = count + 1
@@ -140,22 +140,22 @@ def createHashTable(tuples, bucket, randomConstant):
     return hashTable
 
 
-def makeItemCountDictionary(tuples):
+def makeTuplesHelper(tuples):
     itemIdDictionary = {}
-    itemCountDictionary = {}
+    TuplesHelper = {}
     itemId = 0;
     for each in tuples:
         each = makeStringFromTuple(each)
         if not itemIdDictionary.__contains__(each):
             itemIdDictionary[each] = itemId
             itemId = itemId + 1
-        if itemCountDictionary.__contains__(itemIdDictionary[each]):
-            count = itemCountDictionary[itemIdDictionary[each]]
+        if TuplesHelper.__contains__(itemIdDictionary[each]):
+            count = TuplesHelper[itemIdDictionary[each]]
             count = count + 1
-            itemCountDictionary[itemIdDictionary[each]] = count
+            TuplesHelper[itemIdDictionary[each]] = count
         else:
-            itemCountDictionary[itemIdDictionary[each]] = 1
-    return itemCountDictionary
+            TuplesHelper[itemIdDictionary[each]] = 1
+    return TuplesHelper
 
 
 def makeStringFromTuple(tuple):
